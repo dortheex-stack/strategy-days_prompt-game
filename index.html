@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Duel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #2a2a3a;
+      --accent: #e8ff47;
+      --accent2: #47c8ff;
+      --text: #f0f0f0;
+      --muted: #666680;
+      --danger: #ff4747;
+      --success: #47ff9c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, #e8ff4715 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .timer-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 100px;
+      color: var(--accent);
+      display: none;
+    }
+
+    .timer-badge.active { display: block; }
+    .timer-badge.urgent { color: var(--danger); border-color: var(--danger); animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    main { width: 100%; max-width: 600px; }
+
+    /* REGISTRATION SCREEN */
+    .screen { display: none; flex-direction: column; gap: 24px; }
+    .screen.active { display: flex; }
+
+    h1 {
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--accent);
+      position: relative;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    select option { background: var(--surface); }
+
+    textarea {
+      resize: vertical;
+      min-height: 160px;
+      line-height: 1.6;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #0a0a0f;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      padding: 16px 28px;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      letter-spacing: -0.01em;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* SCENARIO CARD */
+    .scenario-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scenario-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .scenario-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .scenario-text {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    /* TIPS */
+    .tips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tip strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.8rem;
+      margin-bottom: 2px;
+    }
+
+    /* SUBMISSION COUNT */
+    .sub-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* SCORE SCREEN */
+    .score-big {
+      text-align: center;
+      padding: 32px 0;
+    }
+
+    .score-number {
+      font-size: clamp(4rem, 18vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .score-label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .criteria-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .criterion {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .criterion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .criterion-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .criterion-score {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .criterion-score.high { color: var(--success); }
+    .criterion-score.mid { color: var(--accent); }
+    .criterion-score.low { color: var(--danger); }
+
+    .bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .criterion-feedback {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .rank-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.9rem;
+    }
+
+    .rank-pos {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent2);
+    }
+
+    .rank-text { color: var(--muted); font-size: 0.85rem; }
+
+    /* LOADING */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,15,0.9);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .loading-overlay.active { display: flex; }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 0.85rem;
+      transition: transform 0.3s;
+      z-index: 200;
+      white-space: nowrap;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">PROMPT<span>DUEL</span></div>
+  <div class="timer-badge" id="timerBadge">10:00</div>
+</header>
+
+<main>
+
+  <!-- SCREEN 1: REGISTER -->
+  <div class="screen active" id="screenRegister">
+    <div>
+      <h1>Write the best<br><em>AI prompt.</em></h1>
+      <p class="subtitle" style="margin-top:12px">A supply chain crisis. Your prompt. The AI judges. Can you beat the room?</p>
+    </div>
+    <div>
+      <label>Your Name</label>
+      <input type="text" id="inputName" placeholder="e.g. Alex Nielsen" />
+    </div>
+    <div>
+      <label>Your Track</label>
+      <select id="inputTrack">
+        <option value="">Select your track…</option>
+        <option value="procurement">Procurement</option>
+        <option value="operations">Operations</option>
+        <option value="strategy">Strategy</option>
+      </select>
+    </div>
+    <button class="btn" onclick="register()">Enter the Duel →</button>
+  </div>
+
+  <!-- SCREEN 2: PROMPT -->
+  <div class="screen" id="screenPrompt">
+    <div>
+      <h1>Your <em>scenario</em></h1>
+      <p class="subtitle" style="margin-top:8px">Write a prompt that directs an AI to help you solve this crisis. Be specific — the AI judges on 5 criteria.</p>
+    </div>
+
+    <div class="scenario-card" id="scenarioCard">
+      <div class="scenario-tag" id="scenarioTag">Procurement</div>
+      <div class="scenario-text" id="scenarioText">Loading scenario…</div>
+    </div>
+
+    <div>
+      <label>Prompting Tips</label>
+      <div class="tips">
+        <div class="tip"><strong>Set a Role</strong> Tell the AI who it is (e.g. "You are a senior procurement expert…")</div>
+        <div class="tip"><strong>Add Context</strong> Include relevant background from the scenario</div>
+        <div class="tip"><strong>Set Constraints</strong> Budget, timeline, stakeholders</div>
+        <div class="tip"><strong>Specify Output</strong> Ask for a specific format or deliverable</div>
+      </div>
+    </div>
+
+    <div>
+      <label>Your Prompt</label>
+      <textarea id="inputPrompt" placeholder="Write your prompt here…"></textarea>
+      <div class="sub-count" style="margin-top:6px" id="subCount">Submissions: 0</div>
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="submitPrompt()">Submit & Score →</button>
+  </div>
+
+  <!-- SCREEN 3: SCORE -->
+  <div class="screen" id="screenScore">
+    <div class="score-big">
+      <div class="score-number" id="scoreBig">--</div>
+      <div class="score-label">out of 100</div>
+    </div>
+
+    <div class="rank-badge" id="rankBadge">
+      <div class="rank-pos" id="rankPos">#--</div>
+      <div>
+        <div style="font-weight:700">Current Rank</div>
+        <div class="rank-text" id="rankText">out of -- participants</div>
+      </div>
+    </div>
+
+    <div class="criteria-grid" id="criteriaGrid"></div>
+
+    <button class="btn btn-secondary" onclick="resubmit()">← Refine & Resubmit</button>
+    <p class="subtitle" style="text-align:center;font-size:0.8rem">Only your latest score counts on the leaderboard</p>
+  </div>
+
+</main>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Scoring your prompt…</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCENARIOS = {
+    procurement: {
+      tag: "⚡ Procurement Crisis",
+      text: "A sole-source supplier has just announced a 40% price increase, effective in 30 days. They supply a critical component used in 60% of your product range. Walking away risks production shutdowns. Accepting sets a damaging precedent. Your CPO wants a response plan by end of day."
+    },
+    operations: {
+      tag: "🚢 Operations Crisis",
+      text: "A port strike has just been announced, causing an estimated 3-week delay on your top 5 inbound SKUs — right as you enter peak season. Current safety stock covers 8 days. Your COO needs an immediate mitigation plan presented to the board tomorrow morning."
+    },
+    strategy: {
+      tag: "♟ Strategy Crisis",
+      text: "A key competitor has announced they are nearshoring their entire supply chain, cutting lead times by 60% and reducing exposure to geopolitical risk. It's making headlines. Your CEO wants a strategic response within 48 hours — including whether to follow suit, and at what cost."
+    }
+  };
+
+  let participant = null;
+
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 2500);
+  }
+
+  function register() {
+    const name = document.getElementById('inputName').value.trim();
+    const track = document.getElementById('inputTrack').value;
+    if (!name) return showToast('Please enter your name', 'error');
+    if (!track) return showToast('Please select your track', 'error');
+
+    participant = { name, track, submissions: 0 };
+
+    const scenario = SCENARIOS[track];
+    document.getElementById('scenarioTag').textContent = scenario.tag;
+    document.getElementById('scenarioText').textContent = scenario.text;
+
+    switchScreen('screenPrompt');
+  }
+
+  function switchScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  async function submitPrompt() {
+    const prompt = document.getElementById('inputPrompt').value.trim();
+    if (!prompt || prompt.length < 20) return showToast('Write a more detailed prompt first', 'error');
+
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('submitBtn').disabled = true;
+
+    try {
+      const res = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: participant.name,
+          track: participant.track,
+          prompt,
+          scenario: SCENARIOS[participant.track].text
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error');
+
+      participant.submissions++;
+      document.getElementById('subCount').textContent = `Submissions: ${participant.submissions}`;
+
+      renderScore(data);
+      switchScreen('screenScore');
+
+    } catch (err) {
+      showToast('Error submitting — try again', 'error');
+      console.error(err);
+    } finally {
+      document.getElementById('loadingOverlay').classList.remove('active');
+      document.getElementById('submitBtn').disabled = false;
+    }
+  }
+
+  function renderScore(data) {
+    document.getElementById('scoreBig').textContent = data.totalScore;
+    document.getElementById('rankPos').textContent = `#${data.rank}`;
+    document.getElementById('rankText').textContent = `out of ${data.totalParticipants} participants`;
+
+    const grid = document.getElementById('criteriaGrid');
+    grid.innerHTML = '';
+
+    const criteria = [
+      { key: 'context', label: 'Context' },
+      { key: 'roleFraming', label: 'Role Framing' },
+      { key: 'constraints', label: 'Constraints' },
+      { key: 'specificity', label: 'Specificity' },
+      { key: 'outputFormat', label: 'Output Format' }
+    ];
+
+    criteria.forEach(c => {
+      const score = data.scores[c.key];
+      const pct = (score / 20) * 100;
+      const cls = score >= 16 ? 'high' : score >= 10 ? 'mid' : 'low';
+
+      grid.innerHTML += `
+        <div class="criterion">
+          <div class="criterion-header">
+            <span class="criterion-name">${c.label}</span>
+            <span class="criterion-score ${cls}">${score}/20</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div class="criterion-feedback">${data.feedback[c.key]}</div>
+        </div>`;
+    });
+  }
+
+  function resubmit() {
+    switchScreen('screenPrompt');
+  }
+</script>
+</body>
+</html>
